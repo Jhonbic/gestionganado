@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1"> <!-- Responsivo -->
+        <title>Lista de Ganado</title>
+
+        <!-- Bootstrap CSS -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+        <style>
+            body {
+                background-color: #edece8;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+            h2 {
+                color: #4e6c50;
+                font-weight: bold;
+                text-align: center;
+            }
+            .card {
+                background-color: #f8f7f3;
+                transition: transform 0.2s ease-in-out;
+            }
+            .card:hover {
+                transform: scale(1.02);
+            }
+
+            .card-title {
+                color: #3c4a3e;
+                font-weight: 600;
+            }
+            .btn-outline-info {
+                border-color: #4e6c50;
+                color: #4e6c50;
+            }
+            .btn-outline-info:hover {
+                background-color: #4e6c50;
+                color: #fff;
+            }
+
+            /* Ajustes móviles */
+            @media (max-width: 768px) {
+                .navbar-brand {
+                    font-size: 1rem;
+                }
+                .card img {
+                    height: 180px;
+                }
+                .card-title {
+                    font-size: 1rem;
+                }
+                .btn-sm {
+                    font-size: 0.85rem;
+                    padding: 4px 8px;
+                }
+            }
+
+            /* Look del modal */
+            .modal-header.bg-success {
+                background-color: #4e6c50 !important;
+            }
+            .modal-content {
+                border-radius: 12px;
+            }
+            .modal-footer {
+                background-color: #f8f7f3;
+            }
+
+            /* Mejor apariencia para la lista de hijos en el modal */
+            #hijosList .list-group-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+        </style>
+    </head>
+
+    <body class="bg-light">
+        <!-- Navbar -->
+        <nav class="navbar navbar-expand-lg" style="background-color: #4e6c50;">
+            <div class="container-fluid">
+                <a class="navbar-brand text-light fw-bold" href="/ganado">🐮 Gestión de Ganado</a>
+                <button class="navbar-toggler bg-light" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false"
+                        aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto align-items-center">
+                        <li class="nav-item">
+                            <a class="nav-link text-light" href="/ganado/nuevo">➕ Nuevo Registro</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Contenido -->
+        <div class="container mt-4">
+            <h2 class="mb-4">Lista de Ganado</h2>
+
+            <!-- Grid responsivo: 1 col (xs), 2 col (sm), 3 col (lg) -->
+            <div class="row g-4">
+                <div class="col-12 col-sm-6 col-lg-4" th:each="animal : ${ganado}">
+                    <div class="card shadow-lg border-0 rounded-4 h-100">
+
+                        <!-- Imagen: si hay foto real, botón que abre modal + zoom; si no, placeholder sin zoom -->
+                        <button th:if="${animal.fotoUrl != null and !#strings.isEmpty(animal.fotoUrl)}"
+                                type="button"
+                                class="p-0 border-0 bg-transparent w-100"
+                                data-bs-toggle="modal"
+                                data-bs-target="#modalImagenGlobal"
+                                th:attr="data-foto=${animal.fotoUrl}"
+                                style="cursor: zoom-in;">
+                            <img th:src="@{${animal.fotoUrl}}"
+                                 class="card-img-top"
+                                 alt="Foto del animal"
+                                 style="height: 220px; object-fit: cover;">
+                        </button>
+
+                        <!-- Placeholder si no hay imagen -->
+                        <img th:if="${animal.fotoUrl == null or #strings.isEmpty(animal.fotoUrl)}"
+                             th:src="@{/img/vaca.png}"
+                             class="card-img-top"
+                             alt="Sin foto"
+                             style="height: 220px; object-fit: cover; opacity:0.85; cursor: default;">
+
+                        <!-- Datos -->
+                        <div class="card-body">
+                            <h5 class="card-title mb-2">
+                                <span th:text="${animal.id}">1</span>. <span th:text="${animal.nombre}">Nombre</span>
+                            </h5>
+
+                            <p class="card-text small mb-3">
+                                <strong>Raza:</strong> <span th:text="${animal.raza}"></span><br>
+                                <strong>Sexo:</strong> <span th:text="${animal.sexo}"></span><br>
+                                <strong>Padre:</strong> <span th:text="${animal.padre != null ? animal.padre.id+'.'+animal.padre.nombre : 'No Registrado'}"></span><br>
+                                <strong>Madre:</strong> <span th:text="${animal.madre != null ? animal.madre.id+'.'+animal.madre.nombre : 'No Registrada'}"></span><br>
+                                <strong>Fecha Nacimiento:</strong>
+                                <span th:text="${#temporals.format(animal.fechaNacimiento, 'dd/MM/yyyy')}"></span>
+                            </p>
+
+                            <!-- Botones acciones: Notas + Ver hijos -->
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-outline-info btn-sm"
+                                        type="button"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#modalNotasGlobal"
+                                        th:attr="data-nombre=${animal.nombre}, data-notas=${animal.notas != null ? animal.notas : 'Sin notas registradas.'}">
+                                    📝 Ver notas
+                                </button>
+
+                                <!-- Botón Ver Hijos -->
+                                <button type="button"
+                                        class="btn btn-outline-primary btn-sm btn-ver-hijos"
+                                        th:attr="data-id=${animal.id}, data-nombre=${animal.nombre}">
+                                    🐄 Ver hijos
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Botones Footer -->
+                        <div class="card-footer text-center" style="background-color: #f0ede5;">
+                            <a th:href="@{'/ganado/editar/' + ${animal.id}}" class="btn btn-outline-warning btn-sm me-2 fw-bold">✏️ Editar</a>
+                            <a th:href="@{'/ganado/eliminar/' + ${animal.id}}"
+                               class="btn btn-outline-danger btn-sm fw-bold"
+                               onclick="return confirm('¿Seguro que deseas eliminar este registro?')">🗑️ Eliminar</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====== MODALES GLOBALES (fuera del loop) ====== -->
+
+        <!-- Modal Imagen Global -->
+        <div class="modal fade" id="modalImagenGlobal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content bg-dark border-0">
+                    <div class="modal-body text-center">
+                        <img id="imgModalFull" src="" alt="Imagen completa"
+                             class="img-fluid rounded shadow" style="max-height: 80vh;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Notas Global -->
+        <div class="modal fade" id="modalNotasGlobal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered"> <!-- centrado en todas las pantallas -->
+                <div class="modal-content">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title">Notas de <span id="notasNombre">Animal</span></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <p id="notasTexto" style="white-space: pre-line;">Sin notas registradas.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Cerrar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Hijos Global -->
+        <div class="modal fade" id="modalHijosGlobal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-success text-white">
+                        <h5 id="hijosModalLabel" class="modal-title">Hijos</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <ul id="hijosList" class="list-group">
+                            <!-- se llenará por JS -->
+                        </ul>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary px-4" data-bs-dismiss="modal">Cerrar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bootstrap Bundle + Lógica para poblar modales -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                // --- Imagen Global: se ejecuta cuando se va a mostrar el modal ---
+                const imgModal = document.getElementById('modalImagenGlobal');
+                if (imgModal) {
+                    imgModal.addEventListener('show.bs.modal', (event) => {
+                        const btn = event.relatedTarget;
+                        const src = btn ? btn.getAttribute('data-foto') || '' : '';
+                        const imgEl = document.getElementById('imgModalFull');
+                        if (imgEl) {
+                            imgEl.setAttribute('src', src);
+                        }
+                    });
+                }
+
+                // --- Notas Global ---
+                const notasModal = document.getElementById('modalNotasGlobal');
+                if (notasModal) {
+                    notasModal.addEventListener('show.bs.modal', (event) => {
+                        const btn = event.relatedTarget;
+                        const nombre = btn ? btn.getAttribute('data-nombre') || 'Animal' : 'Animal';
+                        const notas = btn ? btn.getAttribute('data-notas') || 'Sin notas registradas.' : 'Sin notas registradas.';
+                        document.getElementById('notasNombre').textContent = nombre;
+                        document.getElementById('notasTexto').textContent = notas;
+                    });
+                }
+
+                // --- Hijos: attach click listeners a botones .btn-ver-hijos ---
+                document.querySelectorAll('.btn-ver-hijos').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        const id = btn.getAttribute('data-id');
+                        const nombre = btn.getAttribute('data-nombre') || 'Animal';
+                        if (!id) return;
+
+                        // Limpia lista y muestra mensaje de cargando
+                        const ul = document.getElementById('hijosList');
+                        ul.innerHTML = '<li class="list-group-item">Cargando...</li>';
+                        document.getElementById('hijosModalLabel').textContent = 'Hijos de ' + nombre;
+
+                        try {
+                            const res = await fetch(`/ganado/${encodeURIComponent(id)}/hijos`);
+                            if (!res.ok) throw new Error('Error HTTP ' + res.status);
+                            const hijos = await res.json();
+
+                            ul.innerHTML = ''; // limpiar
+                            if (!hijos || hijos.length === 0) {
+                                const li = document.createElement('li');
+                                li.className = 'list-group-item';
+                                li.textContent = 'No tiene hijos registrados.';
+                                ul.appendChild(li);
+                            } else {
+                                hijos.forEach(h => {
+                                    const li = document.createElement('li');
+                                    li.className = 'list-group-item';
+                                    // muestra id, nombre, raza y sexo; si quieres agregar más campos modifícalo
+                                    const left = document.createElement('div');
+                                    left.innerHTML = `<strong>${h.id}. ${h.nombre}</strong><br><small>${h.raza || ''} — ${h.sexo || ''}</small>`;
+
+                                    // pequeño botón para ir a editar/ver (opcional)
+                                    const right = document.createElement('div');
+                                    right.innerHTML = `<a class="btn btn-sm btn-outline-secondary" href="/ganado/editar/${h.id}">✏️</a>`;
+                                    li.appendChild(left);
+                                    li.appendChild(right);
+                                    ul.appendChild(li);
+                                });
+                            }
+
+                            // mostrar modal Hijos
+                            const modalEl = document.getElementById('modalHijosGlobal');
+                            const modal = new bootstrap.Modal(modalEl);
+                            modal.show();
+
+                        } catch (err) {
+                            console.error('Error cargando hijos:', err);
+                            ul.innerHTML = '<li class="list-group-item text-danger">No se pudieron cargar los hijos.</li>';
+                            const modalEl = document.getElementById('modalHijosGlobal');
+                            const modal = new bootstrap.Modal(modalEl);
+                            modal.show();
+                        }
+                    });
+                });
+            });
+        </script>
+    </body>
+</html>

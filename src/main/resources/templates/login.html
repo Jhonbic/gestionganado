@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Iniciar sesión - Gestión de Ganado</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        :root{
+            --brand: #4e6c50;
+            --brand-dark: #3c5940;
+            --muted-bg: #edece8;
+            --card-bg: #ffffff;
+        }
+
+        html,body {
+            height: 100%;
+            background-color: var(--muted-bg);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* Contenedor centrado absoluto (X e Y) */
+        .login-wrapper {
+            min-height: 100vh;               /* ocupa toda la altura */
+            display: flex;
+            align-items: center;             /* centra vertical */
+            justify-content: center;         /* centra horizontal */
+            padding: 1.5rem;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 420px;                /* ancho máximo razonable */
+            background: var(--card-bg);
+            border-radius: 14px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            padding: 1.75rem;
+        }
+
+        .brand {
+            color: var(--brand);
+            font-weight: 700;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+        }
+
+        .brand .emoji {
+            font-size: 1.45rem;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .btn-login {
+            background-color: var(--brand);
+            border-color: var(--brand);
+            color: #fff;
+            font-weight: 600;
+            padding: 0.6rem 1rem;
+            border-radius: 8px;
+        }
+        .btn-login:hover {
+            background-color: var(--brand-dark);
+            border-color: var(--brand-dark);
+        }
+
+        .small-muted {
+            color: #6b6b6b;
+            font-size: 0.9rem;
+        }
+
+        .cred-box{
+            background: #f7f7f7;
+            padding: .5rem .75rem;
+            border-radius: 8px;
+            font-size: .9rem;
+            margin-top: .75rem;
+        }
+
+        /* Botón de ver/ocultar contraseña */
+        .password-toggle {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        /* En pantallas muy pequeñas reduce márgenes */
+        @media (max-width: 420px) {
+            .login-card { padding: 1rem; border-radius: 10px; }
+            .brand { font-size: 1.05rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-wrapper">
+        <div class="login-card">
+
+            <div class="mb-3 text-center">
+                <div class="brand">
+                    <span class="emoji">🐮</span>
+                    <span>Gestión de Ganado</span>
+                </div>
+                <p class="small-muted mb-0">Inicia sesión para acceder al sistema</p>
+            </div>
+
+            <!-- Mensajes de error o logout -->
+            <div th:if="${param.error}" class="alert alert-danger py-2">Usuario o contraseña incorrectos</div>
+            <div th:if="${param.logout}" class="alert alert-success py-2">Sesión cerrada correctamente</div>
+
+            <!-- FORM (Spring Security espera POST a /login por defecto) -->
+            <form th:action="@{/login}" method="post" class="mb-2">
+                <div class="mb-3">
+                    <label class="form-label" for="username">Usuario</label>
+                    <input id="username" name="username" type="text" class="form-control form-control-lg" placeholder="Usuario" required autofocus>
+                </div>
+
+                <div class="mb-3 position-relative">
+                    <label class="form-label" for="password">Contraseña</label>
+                    <div class="input-group">
+                        <input id="password" name="password" type="password" class="form-control form-control-lg" placeholder="Contraseña" required>
+                        <span class="input-group-text bg-white password-toggle" id="togglePwd" title="Mostrar/ocultar contraseña">👁️</span>
+                    </div>
+                </div>
+
+                <div class="d-grid mb-3">
+                    <button type="submit" class="btn btn-login btn-lg">Iniciar sesión</button>
+                </div>
+            </form>
+
+            
+
+           
+        </div>
+    </div>
+
+    <!-- Bootstrap + pequeño JS para ver contraseña -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Toggle ver/ocultar contraseña (útil para usuarios mayores)
+        (function(){
+            const toggle = document.getElementById('togglePwd');
+            const pwd = document.getElementById('password');
+            if(!toggle || !pwd) return;
+            toggle.addEventListener('click', () => {
+                if(pwd.type === 'password'){
+                    pwd.type = 'text';
+                    toggle.textContent = '🙈';
+                } else {
+                    pwd.type = 'password';
+                    toggle.textContent = '👁️';
+                }
+            });
+        })();
+    </script>
+</body>
+</html>
