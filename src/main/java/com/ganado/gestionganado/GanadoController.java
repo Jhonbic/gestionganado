@@ -49,35 +49,61 @@ public class GanadoController {
     @PostMapping("/ganado/guardar")
     public String guardarGanado(
             @ModelAttribute Ganado ganado,
+            @RequestParam(value = "padre", required = false) Long padreId,
+            @RequestParam(value = "madre", required = false) Long madreId,
             @RequestParam("foto") MultipartFile foto) throws IOException {
 
+        // 1) Si existe foto, la guardamos (igual que antes)
         if (!foto.isEmpty()) {
-            // 1. Definimos carpeta donde se guardarán las imágenes
             String carpetaUploads = "uploads/";
             Path rutaCarpeta = Paths.get(carpetaUploads);
-
-            // 2. Si no existe la carpeta, la creamos
             if (!Files.exists(rutaCarpeta)) {
                 Files.createDirectories(rutaCarpeta);
             }
-
-            // 3. Obtenemos el nombre original del archivo
             String nombreArchivo = foto.getOriginalFilename();
-
-            // 4. Construimos la ruta completa (carpeta + archivo)
             Path rutaArchivo = rutaCarpeta.resolve(nombreArchivo);
-
-            // 5. Guardamos físicamente el archivo
             Files.copy(foto.getInputStream(), rutaArchivo, StandardCopyOption.REPLACE_EXISTING);
-
-            // 6. Guardamos la ruta relativa en la base de datos
+            // Nota: guardamos la URL relativa
             ganado.setFotoUrl("/uploads/" + nombreArchivo);
         }
 
-        // 7. Guardamos el registro del ganado en la base de datos
-        ganadoRepository.save(ganado);
+        // 2) Si viene id => edición, buscamos y actualizamos; si no => nuevo
+        Ganado toSave;
+        if (ganado.getId() != null) {
+            toSave = ganadoRepository.findById(ganado.getId()).orElse(new Ganado());
+            // copiar campos editables
+            toSave.setNombre(ganado.getNombre());
+            toSave.setRaza(ganado.getRaza());
+            toSave.setSexo(ganado.getSexo());
+            toSave.setFechaNacimiento(ganado.getFechaNacimiento());
+            toSave.setNotas(ganado.getNotas());
+            // Si foto fue subida, ya seteamos ganado.setFotoUrl arriba; preferimos mantenerla:
+            if (ganado.getFotoUrl() != null) {
+                toSave.setFotoUrl(ganado.getFotoUrl());
+            }
+        } else {
+            // nuevo registro — usamos el objeto ganado tal cual
+            toSave = ganado;
+        }
 
-        // 8. Redirigimos al listado
+        // 3) Asignar padre/madre por id (si fueron enviados)
+        if (padreId != null) {
+            Ganado padre = ganadoRepository.findById(padreId).orElse(null);
+            toSave.setPadre(padre);
+        } else {
+            toSave.setPadre(null);
+        }
+
+        if (madreId != null) {
+            Ganado madre = ganadoRepository.findById(madreId).orElse(null);
+            toSave.setMadre(madre);
+        } else {
+            toSave.setMadre(null);
+        }
+
+        // 4) Guardar en BD (insert o update según corresponda)
+        ganadoRepository.save(toSave);
+
         return "redirect:/ganado";
     }
 
@@ -89,6 +115,11 @@ public class GanadoController {
         Ganado ganado = ganadoRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("ID inválido: " + id));
         model.addAttribute("ganado", ganado);
+
+        // <- AÑADIDO: lista para los selects de padre/madre
+        List<Ganado> listaGanado = ganadoRepository.findAll();
+        model.addAttribute("listaGanado", listaGanado);
+
         return "form-ganado"; // reutilizamos el mismo formulario
     }
 
